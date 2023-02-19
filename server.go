@@ -27,36 +27,9 @@ func main() {
 	}
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
-		return
-	})
 
-	r.POST("/register", func(c *gin.Context) {
-		ldapUid := c.PostForm("ldap_username")
-		ldapPassword := c.PostForm("ldap_password")
-		misskeyUsername := c.PostForm("misskey_username")
-		misskeyPassword := c.PostForm("misskey_password")
-		if ldapLogin(ldapUid, ldapPassword) {
-			err := createAccount(misskeyUsername, misskeyPassword)
-			if err != nil {
-				c.HTML(http.StatusInternalServerError, "register.html", gin.H{
-					"title": "登録失敗",
-					"body":  err,
-				})
-				return
-			}
-			c.HTML(http.StatusAccepted, "register.html", gin.H{
-				"title": "登録完了",
-				"body":  "5秒後にmisskeyにリダイレクトします...",
-			})
-			return
-		}
-		c.HTML(http.StatusBadRequest, "register.html", gin.H{
-			"title": "LDAP認証失敗",
-			"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
-		})
-	})
+	r.GET("/", index)
+	r.POST("/register", register)
 
 	isSSL := os.Getenv("SSL") == "true"
 	if isSSL {
@@ -70,6 +43,45 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+func index(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
+	return
+}
+
+func register(c *gin.Context) {
+	ldapUid := c.PostForm("ldap_username")
+	ldapPassword := c.PostForm("ldap_password")
+	misskeyUsername := c.PostForm("misskey_username")
+	misskeyPassword := c.PostForm("misskey_password")
+	if ldapLogin(ldapUid, ldapPassword) {
+		err := createAccount(misskeyUsername, misskeyPassword)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "register.html", gin.H{
+				"title": "登録失敗",
+				"body":  err,
+			})
+			return
+		}
+		c.HTML(http.StatusAccepted, "register.html", gin.H{
+			"title": "登録完了",
+			"body":  "5秒後にmisskeyにリダイレクトします...",
+		})
+		return
+	}
+	c.HTML(http.StatusBadRequest, "register.html", gin.H{
+		"title": "LDAP認証失敗",
+		"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
+	})
+}
+
+type Authentication interface {
+	Login(uid, password string) error
+}
+
+type Register interface {
+	SignUp(username, password string) error
 }
 
 // #TODO create mock
