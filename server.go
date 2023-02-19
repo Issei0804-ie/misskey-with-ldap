@@ -66,7 +66,8 @@ func register(c *gin.Context) {
 		})
 		return
 	}
-	err := createAccount(misskeyUsername, misskeyPassword)
+	instance := newMisskeyInstance(os.Getenv("MISSKEY_HOST"), os.Getenv("MISSKEY_TOKEN"))
+	err := instance.SignUp(misskeyUsername, misskeyPassword)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "register.html", gin.H{
 			"title": "登録失敗",
@@ -156,14 +157,24 @@ func (l LDAP) Login(uid, password string) error {
 	return nil
 }
 
-// #TODO create mock
-func createAccount(username, password string) error {
-	endpoint, err := url.JoinPath(os.Getenv("MISSKEY_HOST"), "/api/admin/accounts/create")
+func newMisskeyInstance(host, token string) Register {
+	return MissKeyInstance{
+		host:  host,
+		token: token,
+	}
+}
+
+type MissKeyInstance struct {
+	host  string
+	token string
+}
+
+func (m MissKeyInstance) SignUp(username, password string) error {
+	endpoint, err := url.JoinPath(m.host, "/api/admin/accounts/create")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	token := os.Getenv("MISSKEY_TOKEN")
 	reqBody := struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -171,7 +182,7 @@ func createAccount(username, password string) error {
 	}{
 		Username: username,
 		Password: password,
-		I:        token,
+		I:        m.token,
 	}
 	jsonString, err := json.Marshal(reqBody)
 
