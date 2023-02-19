@@ -22,7 +22,7 @@ func main() {
 	log.Println(dir)
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal(nil)
+		log.Fatal(err)
 	}
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
