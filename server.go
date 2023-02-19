@@ -40,16 +40,17 @@ func main() {
 		if ldapLogin(ldapUid, ldapPassword) {
 			err := createAccount(misskeyUsername, misskeyPassword)
 			if err != nil {
-				c.HTML(http.StatusAccepted, "register.html", gin.H{
-					"title": "登録完了",
-					"body":  "5秒後にmisskeyにリダイレクトします...",
+				c.HTML(http.StatusInternalServerError, "register.html", gin.H{
+					"title": "登録失敗",
+					"body":  err,
 				})
 				return
 			}
-			c.HTML(http.StatusInternalServerError, "register.html", gin.H{
-				"title": "登録失敗",
-				"body":  err,
+			c.HTML(http.StatusAccepted, "register.html", gin.H{
+				"title": "登録完了",
+				"body":  "5秒後にmisskeyにリダイレクトします...",
 			})
+			return
 		}
 		c.HTML(http.StatusBadRequest, "register.html", gin.H{
 			"title": "LDAP認証失敗",
