@@ -55,7 +55,10 @@ func register(c *gin.Context) {
 	ldapPassword := c.PostForm("ldap_password")
 	misskeyUsername := c.PostForm("misskey_username")
 	misskeyPassword := c.PostForm("misskey_password")
-	if ldapLogin(ldapUid, ldapPassword) {
+
+	l := newLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
+	defer l.Close()
+	if l.Login(ldapUid, ldapPassword) != nil {
 		err := createAccount(misskeyUsername, misskeyPassword)
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "register.html", gin.H{
@@ -76,65 +79,79 @@ func register(c *gin.Context) {
 	})
 }
 
-type Authentication interface {
+type Authenticator interface {
 	Login(uid, password string) error
+	Close()
 }
 
 type Register interface {
 	SignUp(username, password string) error
 }
 
-// #TODO create mock
-func ldapLogin(uid string, password string) bool {
+func newLDAP(URI, manager, password, dn string) Authenticator {
+	l, err := ldap.DialURL(URI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return LDAP{
+		URI:      URI,
+		Manager:  manager,
+		Password: password,
+		conn:     l,
+		DN:       dn,
+	}
+}
 
-	ldapURI := os.Getenv("LDAP_HOST")
-	l, err := ldap.DialURL(ldapURI)
+type LDAP struct {
+	URI      string
+	Manager  string
+	Password string
+	conn     *ldap.Conn
+	DN       string
+}
+
+func (l LDAP) Close() {
+	l.conn.Close()
+	return
+}
+
+func (l LDAP) Login(uid, password string) error {
+	err := l.conn.Bind(l.Manager, l.Password)
 	if err != nil {
 		log.Println(err)
-		return false
+		return err
 	}
-	defer l.Close()
-	manager := os.Getenv("LDAP_MANAGER")
-	managerPassword := os.Getenv("LDAP_PASSWORD")
-	err = l.Bind(manager, managerPassword)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-
-	baseDN := os.Getenv("LDAP_BASE")
 
 	searchRequest := ldap.NewSearchRequest(
-		baseDN,
+		l.DN,
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
 		fmt.Sprintf("(&(uid=%s))", uid),
 		[]string{"dn"},
 		nil,
 	)
 
-	sr, err := l.Search(searchRequest)
+	sr, err := l.conn.Search(searchRequest)
 	if err != nil {
 		log.Println(err)
-		return false
+		return err
 	}
 
 	if len(sr.Entries) == 0 {
 		log.Printf("user not found")
-		return false
+		return err
 	} else if len(sr.Entries) != 1 {
 		log.Println("to many found.")
-		return false
+		return err
 	}
 
-	// #TODO The code may cause a panic.
 	entity := sr.Entries[0]
-	err = l.Bind(entity.DN, password)
+	err = l.conn.Bind(entity.DN, password)
 
 	if err != nil {
 		log.Println(err)
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 // #TODO create mock
