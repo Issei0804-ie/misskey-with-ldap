@@ -56,7 +56,7 @@ func main() {
 			"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
 		})
 	})
-	r.RunTLS(":80", "./ssl/server.pem", "./ssl/server.key")
+	r.RunTLS(":443", "./ssl/server.pem", "./ssl/server.key")
 }
 
 func ldapLogin(uid string, password string) bool {
