@@ -57,9 +57,15 @@ func main() {
 		})
 	})
 	if os.Getenv("SSL") == "true" {
-		r.RunTLS(":443", "./ssl/server.pem", "./ssl/server.key")
+		err := r.RunTLS(":443", "./ssl/server.pem", "./ssl/server.key")
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		r.Run(":80")
+		err := r.Run(":80")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
