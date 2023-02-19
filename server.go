@@ -58,25 +58,27 @@ func register(c *gin.Context) {
 
 	l := newLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
 	defer l.Close()
-	if l.Login(ldapUid, ldapPassword) != nil {
-		err := createAccount(misskeyUsername, misskeyPassword)
-		if err != nil {
-			c.HTML(http.StatusInternalServerError, "register.html", gin.H{
-				"title": "登録失敗",
-				"body":  err,
-			})
-			return
-		}
-		c.HTML(http.StatusAccepted, "register.html", gin.H{
-			"title": "登録完了",
-			"body":  "5秒後にmisskeyにリダイレクトします...",
+	if err := l.Login(ldapUid, ldapPassword); err != nil {
+		log.Println(err)
+		c.HTML(http.StatusBadRequest, "register.html", gin.H{
+			"title": "LDAP認証失敗",
+			"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
 		})
 		return
 	}
-	c.HTML(http.StatusBadRequest, "register.html", gin.H{
-		"title": "LDAP認証失敗",
-		"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
+	err := createAccount(misskeyUsername, misskeyPassword)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "register.html", gin.H{
+			"title": "登録失敗",
+			"body":  err,
+		})
+		return
+	}
+	c.HTML(http.StatusAccepted, "register.html", gin.H{
+		"title": "登録完了",
+		"body":  "5秒後にmisskeyにリダイレクトします...",
 	})
+	return
 }
 
 type Authenticator interface {
