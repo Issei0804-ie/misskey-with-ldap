@@ -29,6 +29,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
+		return
 	})
 
 	r.POST("/register", func(c *gin.Context) {
@@ -37,10 +38,25 @@ func main() {
 		misskeyUsername := c.PostForm("misskey_username")
 		misskeyPassword := c.PostForm("misskey_password")
 		if ldapLogin(ldapUid, ldapPassword) {
-			createAccount(misskeyUsername, misskeyPassword)
+			err := createAccount(misskeyUsername, misskeyPassword)
+			if err != nil {
+				c.HTML(http.StatusAccepted, "register.html", gin.H{
+					"title": "登録完了",
+					"body":  "5秒後にmisskeyにリダイレクトします...",
+				})
+				return
+			}
+			c.HTML(http.StatusInternalServerError, "register.html", gin.H{
+				"title": "登録失敗",
+				"body":  err,
+			})
 		}
+		c.HTML(http.StatusBadRequest, "register.html", gin.H{
+			"title": "LDAP認証失敗",
+			"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
+		})
 	})
-	r.Run(":80")
+	r.RunTLS(":80", "./ssl/server.pem", "./ssl/server.key")
 }
 
 func ldapLogin(uid string, password string) bool {
