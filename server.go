@@ -3,9 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"github.com/Issei0804-ie/misskey-with-ldap/auth"
 	"github.com/gin-gonic/gin"
-	ldap "github.com/go-ldap/ldap/v3"
 	"github.com/joho/godotenv"
 	"io"
 	"log"
@@ -56,7 +55,7 @@ func register(c *gin.Context) {
 	misskeyUsername := c.PostForm("misskey_username")
 	misskeyPassword := c.PostForm("misskey_password")
 
-	l := newLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
+	l := auth.NewLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
 	defer l.Close()
 	if err := l.Login(ldapUid, ldapPassword); err != nil {
 		log.Println(err)
@@ -82,79 +81,8 @@ func register(c *gin.Context) {
 	return
 }
 
-type Authenticator interface {
-	Login(uid, password string) error
-	Close()
-}
-
 type Register interface {
 	SignUp(username, password string) error
-}
-
-func newLDAP(URI, manager, password, dn string) Authenticator {
-	l, err := ldap.DialURL(URI)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return LDAP{
-		URI:      URI,
-		Manager:  manager,
-		Password: password,
-		conn:     l,
-		DN:       dn,
-	}
-}
-
-type LDAP struct {
-	URI      string
-	Manager  string
-	Password string
-	conn     *ldap.Conn
-	DN       string
-}
-
-func (l LDAP) Close() {
-	l.conn.Close()
-	return
-}
-
-func (l LDAP) Login(uid, password string) error {
-	err := l.conn.Bind(l.Manager, l.Password)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	searchRequest := ldap.NewSearchRequest(
-		l.DN,
-		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf("(&(uid=%s))", uid),
-		[]string{"dn"},
-		nil,
-	)
-
-	sr, err := l.conn.Search(searchRequest)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	if len(sr.Entries) == 0 {
-		log.Printf("user not found")
-		return err
-	} else if len(sr.Entries) != 1 {
-		log.Println("to many found.")
-		return err
-	}
-
-	entity := sr.Entries[0]
-	err = l.conn.Bind(entity.DN, password)
-
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
 }
 
 func newMisskeyInstance(host, token string) Register {

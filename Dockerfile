@@ -5,8 +5,10 @@ WORKDIR /usr/src/app
 # pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
 
 COPY ./server.go ./
+COPY ./auth/ ./auth
 COPY ./go.mod ./
 COPY ./go.sum ./
+RUN ls
 
 RUN go mod download && go mod verify
 
