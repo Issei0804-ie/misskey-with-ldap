@@ -57,7 +57,9 @@ func main() {
 			"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
 		})
 	})
-	if os.Getenv("SSL") == "true" {
+
+	isSSL := os.Getenv("SSL") == "true"
+	if isSSL {
 		err := r.RunTLS(":443", "./ssl/server.pem", "./ssl/server.key")
 		if err != nil {
 			log.Fatal(err)
@@ -76,14 +78,16 @@ func ldapLogin(uid string, password string) bool {
 	ldapURI := os.Getenv("LDAP_HOST")
 	l, err := ldap.DialURL(ldapURI)
 	if err != nil {
-		log.Fatal(nil)
+		log.Println(err)
+		return false
 	}
 	defer l.Close()
 	manager := os.Getenv("LDAP_MANAGER")
 	managerPassword := os.Getenv("LDAP_PASSWORD")
 	err = l.Bind(manager, managerPassword)
 	if err != nil {
-		log.Fatal(nil)
+		log.Println(err)
+		return false
 	}
 
 	baseDN := os.Getenv("LDAP_BASE")
@@ -98,13 +102,16 @@ func ldapLogin(uid string, password string) bool {
 
 	sr, err := l.Search(searchRequest)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return false
 	}
 
 	if len(sr.Entries) == 0 {
 		log.Printf("user not found")
+		return false
 	} else if len(sr.Entries) != 1 {
 		log.Println("to many found.")
+		return false
 	}
 
 	// #TODO The code may cause a panic.
@@ -112,7 +119,8 @@ func ldapLogin(uid string, password string) bool {
 	err = l.Bind(entity.DN, password)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return false
 	}
 	return true
 }
