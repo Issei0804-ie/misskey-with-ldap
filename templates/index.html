@@ -1,0 +1,34 @@
+<html>
+    <h2>ユーザー登録</h2>
+    <form method="POST" action="/register">
+        <div>
+            <div>
+                <span>LDAP情報</span>
+            </div>
+            <div>
+                <span>LDAP username</span>
+                <input type="text" name="ldap_username">
+            </div>
+            <div>
+                <span>LDAP password</span>
+                <input type="password" name="ldap_password">
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <span>登録したいmisskeyの情報</span>
+            </div>
+            <div>
+                <span>username</span>
+                <input type="text" name="misskey_username">
+            </div>
+            <div>
+                <span>password</span>
+                <input type="password" name="misskey_password">
+            </div>
+        </div>
+
+        <button>登録する</button>
+    </form>
+</html>

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	ldap "github.com/go-ldap/ldap/v3"
 	"github.com/joho/godotenv"
 	"io"
@@ -11,23 +12,35 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	_, pwd, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(pwd)
+	log.Println(dir)
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal(nil)
 	}
+	r := gin.Default()
+	r.LoadHTMLGlob("templates/*")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
+	})
 
-	uid := "sample"
-	password := "hogehoge"
-
-	username := "sample-user"
-	misskeyPass := "fugafuga"
-	if ldapLogin(uid, password) {
-		createAccount(username, misskeyPass)
-	}
+	r.POST("/register", func(c *gin.Context) {
+		ldapUid := c.PostForm("ldap_username")
+		ldapPassword := c.PostForm("ldap_password")
+		misskeyUsername := c.PostForm("misskey_username")
+		misskeyPassword := c.PostForm("misskey_password")
+		if ldapLogin(ldapUid, ldapPassword) {
+			createAccount(misskeyUsername, misskeyPassword)
+		}
+	})
+	r.Run(":80")
 }
 
 func ldapLogin(uid string, password string) bool {
