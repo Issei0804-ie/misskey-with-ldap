@@ -70,6 +70,7 @@ func main() {
 	}
 }
 
+// #TODO create mock
 func ldapLogin(uid string, password string) bool {
 
 	ldapURI := os.Getenv("LDAP_HOST")
@@ -106,6 +107,7 @@ func ldapLogin(uid string, password string) bool {
 		log.Println("to many found.")
 	}
 
+	// #TODO The code may cause a panic.
 	entity := sr.Entries[0]
 	err = l.Bind(entity.DN, password)
 
@@ -115,6 +117,7 @@ func ldapLogin(uid string, password string) bool {
 	return true
 }
 
+// #TODO create mock
 func createAccount(username, password string) error {
 	endpoint, err := url.JoinPath(os.Getenv("MISSKEY_HOST"), "/api/admin/accounts/create")
 	if err != nil {
