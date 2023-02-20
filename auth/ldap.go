@@ -89,6 +89,7 @@ func (l LDAP) Login(uid, password string) error {
 	}
 
 	entity := sr.Entries[0]
+	log.Println(entity)
 	err = l.conn.Bind(entity.DN, password)
 
 	if err != nil {
