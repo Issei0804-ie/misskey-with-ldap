@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"runtime"
@@ -80,11 +81,15 @@ func (l LDAP) Login(uid, password string) error {
 		return err
 	}
 
+	log.Println(sr)
+
 	if len(sr.Entries) == 0 {
 		log.Printf("user not found")
+		err = errors.New("user not found")
 		return err
 	} else if len(sr.Entries) != 1 {
 		log.Println("to many found.")
+		err = errors.New("to many found")
 		return err
 	}
 
