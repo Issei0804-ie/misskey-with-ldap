@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 
 	"github.com/Issei0804-ie/misskey-with-ldap/auth"
+	"github.com/Issei0804-ie/misskey-with-ldap/register"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -20,10 +17,12 @@ func main() {
 		log.Fatal(err)
 	}
 	r := gin.Default()
-	r.LoadHTMLGlob("templates/*")
+	r.LoadHTMLGlob("templates/*/**")
+	r.LoadHTMLGlob("templates/*.html")
 
+	r.Static("/static", "./templates/static")
 	r.GET("/", index)
-	r.POST("/register", register)
+	r.POST("/regist", regist)
 
 	isSSL := os.Getenv("SSL") == "true"
 	if isSSL {
@@ -44,7 +43,15 @@ func index(c *gin.Context) {
 	return
 }
 
-func register(c *gin.Context) {
+func successRegister(c *gin.Context) {
+	c.HTML(http.StatusAccepted, "register.html", gin.H{
+		"title": "登録完了",
+		"body":  "5秒後にmisskeyにリダイレクトします...",
+	})
+	return
+}
+
+func regist(c *gin.Context) {
 	// TODO validate
 	ldapUid := c.PostForm("ldap_username")
 	ldapPassword := c.PostForm("ldap_password")
@@ -52,22 +59,34 @@ func register(c *gin.Context) {
 	misskeyPassword := c.PostForm("misskey_password")
 
 	// TODO validate
-	l := auth.NewLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
+	var l auth.Authenticator
+	if os.Getenv("LDAP_MOCK") == "true" {
+		l = auth.NewLDAPMock()
+	} else {
+		l = auth.NewLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
+	}
+
 	defer l.Close()
 	if err := l.Login(ldapUid, ldapPassword); err != nil {
 		log.Println(err)
-		c.HTML(http.StatusBadRequest, "register.html", gin.H{
-			"title": "LDAP認証失敗",
-			"body":  "LDAP認証に失敗しました。パスワードとユーザー名が違うかもしれません。",
+		c.HTML(http.StatusBadRequest, "index.html", gin.H{
+			"ldap_username_error": "LDAP認証が通りませんでした!!",
+			"ldap_password_error": "LDAP認証が通りませんでした!!",
 		})
 		return
 	}
-	instance := newMisskeyInstance(os.Getenv("MISSKEY_HOST"), os.Getenv("MISSKEY_TOKEN"))
+
+	var instance register.Register
+	if os.Getenv("MISSKEY_MOCK") == "true" {
+		instance = register.NewMisskeyMockInstance()
+	} else {
+		instance = register.NewMisskeyInstance(os.Getenv("MISSKEY_HOST"), os.Getenv("MISSKEY_TOKEN"))
+	}
 	err := instance.SignUp(misskeyUsername, misskeyPassword)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "register.html", gin.H{
-			"title": "登録失敗",
-			"body":  err,
+		c.HTML(http.StatusInternalServerError, "index.html", gin.H{
+			"misskey_username_error": "misskeyへの登録が通りませんでした!! syskanに聞いて!!",
+			"misskey_password_error": "misskeyへの登録が通りませんでした!! syskanに聞いて!!",
 		})
 		return
 	}
@@ -76,69 +95,4 @@ func register(c *gin.Context) {
 		"body":  "5秒後にmisskeyにリダイレクトします...",
 	})
 	return
-}
-
-type Register interface {
-	SignUp(username, password string) error
-}
-
-func newMisskeyInstance(host, token string) Register {
-	return MissKeyInstance{
-		host:  host,
-		token: token,
-	}
-}
-
-type MissKeyInstance struct {
-	host  string
-	token string
-}
-
-func (m MissKeyInstance) SignUp(username, password string) error {
-	endpoint, err := url.JoinPath(m.host, "/api/admin/accounts/create")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	reqBody := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		I        string `json:"i"`
-	}{
-		Username: username,
-		Password: password,
-		I:        m.token,
-	}
-	jsonString, err := json.Marshal(reqBody)
-
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonString))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := new(http.Client)
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	byteArray, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	log.Println("%#v", string(byteArray))
-
-	return nil
 }

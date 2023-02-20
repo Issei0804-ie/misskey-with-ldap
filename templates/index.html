@@ -1,6 +1,11 @@
 <html>
+    <head>
+        <style type="text/css" media="screen">
+            @import url("/static/index.css");
+        </style>
+    </head>
     <h2>ユーザー登録</h2>
-    <form method="POST" action="/register">
+    <form method="POST" action="/regist">
         <div>
             <div>
                 <span>LDAP情報</span>
@@ -8,10 +13,12 @@
             <div>
                 <span>LDAP username</span>
                 <input type="text" name="ldap_username">
+                <span class="error">{{ .ldap_username_error }}</span>
             </div>
             <div>
                 <span>LDAP password</span>
                 <input type="password" name="ldap_password">
+                <span class="error">{{ .ldap_password_error }}</span>
             </div>
         </div>
 
@@ -22,10 +29,12 @@
             <div>
                 <span>username</span>
                 <input type="text" name="misskey_username">
+                <span class="error">{{ .misskey_username_error }}</span>
             </div>
             <div>
                 <span>password</span>
                 <input type="password" name="misskey_password">
+                <span class="error">{{ .misskey_password_error }}</span>
             </div>
         </div>
 

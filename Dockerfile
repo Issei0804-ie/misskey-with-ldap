@@ -6,6 +6,7 @@ WORKDIR /usr/src/app
 
 COPY ./server.go ./
 COPY ./auth/ ./auth
+COPY ./register/ ./register
 COPY ./go.mod ./
 COPY ./go.sum ./
 RUN ls
