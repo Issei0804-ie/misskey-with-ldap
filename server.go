@@ -58,6 +58,36 @@ func regist(c *gin.Context) {
 	misskeyUsername := c.PostForm("misskey_username")
 	misskeyPassword := c.PostForm("misskey_password")
 
+	var ldapUsernameError, ldapPasswordError, misskeyUsernameError, misskeyPasswordError string
+	var isNotFill bool
+	if ldapUid == "" {
+		ldapUsernameError = "フィールドが空です"
+		isNotFill = true
+	}
+
+	if ldapPassword == "" {
+		ldapPasswordError = "フィールドが空です"
+		isNotFill = true
+	}
+	if misskeyUsername == "" {
+		misskeyUsernameError = "フィールドが空です"
+		isNotFill = true
+	}
+	if misskeyPassword == "" {
+		misskeyPasswordError = "フィールドが空です"
+		isNotFill = true
+	}
+
+	if isNotFill {
+		c.HTML(http.StatusBadRequest, "index.html", gin.H{
+			"ldap_username_error":    ldapUsernameError,
+			"ldap_password_error":    ldapPasswordError,
+			"misskey_username_error": misskeyUsernameError,
+			"misskey_password_error": misskeyPasswordError,
+		})
+		return
+	}
+
 	// TODO validate
 	var l auth.Authenticator
 	if os.Getenv("LDAP_MOCK") == "true" {
