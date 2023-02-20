@@ -3,23 +3,18 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Issei0804-ie/misskey-with-ldap/auth"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
-	"runtime"
+
+	"github.com/Issei0804-ie/misskey-with-ldap/auth"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	_, pwd, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(pwd)
-	log.Println(dir)
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal(err)
@@ -50,11 +45,13 @@ func index(c *gin.Context) {
 }
 
 func register(c *gin.Context) {
+	// TODO validate
 	ldapUid := c.PostForm("ldap_username")
 	ldapPassword := c.PostForm("ldap_password")
 	misskeyUsername := c.PostForm("misskey_username")
 	misskeyPassword := c.PostForm("misskey_password")
 
+	// TODO validate
 	l := auth.NewLDAP(os.Getenv("LDAP_HOST"), os.Getenv("LDAP_MANAGER"), os.Getenv("LDAP_PASSWORD"), os.Getenv("LDAP_BASE"))
 	defer l.Close()
 	if err := l.Login(ldapUid, ldapPassword); err != nil {
