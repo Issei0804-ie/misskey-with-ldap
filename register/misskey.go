@@ -3,6 +3,7 @@ package register
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -80,6 +81,9 @@ func (m MissKeyInstance) SignUp(username, password string) error {
 		return err
 	}
 	log.Println(resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("登録エラー")
+	}
 	log.Println("%#v", string(byteArray))
 
 	return nil
