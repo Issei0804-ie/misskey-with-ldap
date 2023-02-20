@@ -3,41 +3,40 @@
         <style type="text/css" media="screen">
             @import url("/static/index.css");
         </style>
+        <meta name="viewport" content="width=device-width">
     </head>
-    <h2>ユーザー登録</h2>
-    <form method="POST" action="/regist">
-        <div>
-            <div>
-                <span>LDAP情報</span>
+    <body>
+        <h2>ユーザー登録</h2>
+        <form method="POST" action="/regist">
+            <div class="info-group">
+                <div class="info-name">
+                    <span>LDAP情報</span>
+                </div>
+                <label>LDAP username
+                    <input type="text" name="ldap_username">
+                    <span class="error">{{ .ldap_username_error }}</span>
+                </label>
+                <label>LDAP password
+                    <input type="password" name="ldap_password">
+                    <span class="error">{{ .ldap_password_error }}</span>
+                </label>
             </div>
-            <div>
-                <span>LDAP username</span>
-                <input type="text" name="ldap_username">
-                <span class="error">{{ .ldap_username_error }}</span>
+    
+            <div class="info-group">
+                <div class="info-name">
+                    <span>登録したいmisskeyの情報</span>
+                </div>
+                <label>username
+                    <input type="text" name="misskey_username">
+                    <span class="error">{{ .misskey_username_error }}</span>
+                </label>
+                <label>password
+                    <input type="password" name="misskey_password">
+                    <span class="error">{{ .misskey_password_error }}</span>
+                </label>
             </div>
-            <div>
-                <span>LDAP password</span>
-                <input type="password" name="ldap_password">
-                <span class="error">{{ .ldap_password_error }}</span>
-            </div>
-        </div>
-
-        <div>
-            <div>
-                <span>登録したいmisskeyの情報</span>
-            </div>
-            <div>
-                <span>username</span>
-                <input type="text" name="misskey_username">
-                <span class="error">{{ .misskey_username_error }}</span>
-            </div>
-            <div>
-                <span>password</span>
-                <input type="password" name="misskey_password">
-                <span class="error">{{ .misskey_password_error }}</span>
-            </div>
-        </div>
-
-        <button>登録する</button>
-    </form>
+    
+            <button>登録する</button>
+        </form>
+    </body>
 </html>
