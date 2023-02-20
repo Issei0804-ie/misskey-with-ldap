@@ -79,7 +79,7 @@ func (m MissKeyInstance) SignUp(username, password string) error {
 		log.Println(err)
 		return err
 	}
-
+	log.Println(resp.StatusCode)
 	log.Println("%#v", string(byteArray))
 
 	return nil
